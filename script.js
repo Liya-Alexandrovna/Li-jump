@@ -1,8 +1,44 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const fonImg = new Image();
-fonImg.src = "fonimg.jpg";
+// Картинки
+const fonImg = new Image(); fonImg.src = "fonimg.jpg";
+const pandaImg = new Image(); pandaImg.src = "Panda.png";
+const pipeImg = new Image(); pipeImg.src = "klipartz.com.png";
+const playImg = new Image(); playImg.src = "play.png";
+const pauseImg = new Image(); pauseImg.src = "pause.png";
+const startImg = new Image(); startImg.src = "start.png";
+const gameOverImg = new Image(); gameOverImg.src = "gameOver.png";
+
+// Размеры и физика
+const platformWidth = 60;
+const platformHeight = 20;
+const pandaWidth = 60;
+const pandaHeight = 70;
+const stepY = 50;
+const gravity = 0.5;
+const jumpPower = -10;
+const pauseX = 10;
+const pauseY = 0;
+const pauseSize = 50;
+const btnWidth = 200;
+const btnHeight = 60;
+const btnX = (canvas.width - btnWidth) / 2;
+const btnY = 500;
+
+let pandaX, pandaY;
+let velocityX = 0, velocityY = 0;
+let backgroundY = 0;
+let maxHeight = 0;
+let gameStarted = false;
+let isPaused = false;
+let startButton = true;
+let startLoop = false;
+let gameOver = false;
+let animation = null;
+let fourPlatforms = 0;
+
+let platforms = [];
 
 function resizeCanvas() {
   if (window.innerWidth <= 320) {
@@ -14,21 +50,240 @@ function resizeCanvas() {
   }
 }
 
-function drawBackground() {
-  if (fonImg.complete) {
-    ctx.drawImage(fonImg, 0, 0, canvas.width, canvas.height);
-  } else {
-    ctx.fillStyle = "#cceeff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+function generatePlatforms() {
+  platforms = [];
+  const startX = (canvas.width - platformWidth) / 2;
+  const startY = canvas.height - 20;
+  platforms.push({ x: startX, y: startY });
+  for (let i = 1; i < 30; i++) {
+    platforms.push({
+      x: Math.random() * (canvas.width - platformWidth),
+      y: startY - i * stepY,
+    });
   }
 }
 
-function loop() {
-  requestAnimationFrame(loop);
-  drawBackground();
-  // Здесь будет отрисовка игры (персонаж, платформы и т.п.)
+function jump() {
+  velocityY = jumpPower;
 }
 
-resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
-loop();
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // фон
+  const bgHeight = (fonImg.height * canvas.width) / fonImg.width;
+  const y = -backgroundY % bgHeight;
+  for (let i = -1; i <= Math.ceil(canvas.height / bgHeight); i++) {
+    ctx.drawImage(fonImg, 0, y + i * bgHeight, canvas.width, bgHeight);
+  }
+
+  // платформы
+  for (const p of platforms) {
+    ctx.drawImage(pipeImg, p.x, p.y + backgroundY, platformWidth, platformHeight);
+  }
+   
+  const score = Math.floor((maxHeight + fourPlatforms) / stepY);
+  ctx.fillText(score,canvas.width - 50,35);
+
+  // панда
+  ctx.drawImage(pandaImg, pandaX, pandaY, pandaWidth, pandaHeight);
+
+  // счёт
+  ctx.fillStyle = "black";
+  ctx.font = "bold 28px Italic";
+
+  // пауза
+  ctx.drawImage(isPaused ? playImg : pauseImg, pauseX, pauseY, pauseSize, pauseSize);
+
+  // кнопка Играть
+  if (startButton) {
+    ctx.drawImage(startImg, 0, 0, canvas.width, canvas.height);
+    const btnX = (canvas.width - btnWidth) / 2;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(btnX, btnY, btnWidth, btnHeight);
+    ctx.strokeStyle = "#000";
+    ctx.strokeRect(btnX, btnY, btnWidth, btnHeight);
+
+    ctx.fillStyle = "#000";
+    ctx.font = "bold 30px Italic";
+    ctx.textAlign = "center";
+    ctx.fillText("Start", canvas.width / 2, 540);
+  }
+  if (gameOver) {
+    ctx.drawImage(gameOverImg, 0, 0, canvas.width, canvas.height);
+    const btnX = (canvas.width - btnWidth) / 2;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(btnX, 130, btnWidth, btnHeight);
+    ctx.strokeStyle = "#000";
+    ctx.strokeRect(btnX, 130, btnWidth, btnHeight);
+
+    ctx.fillStyle = "#000";
+    ctx.font = "bold 30px Italic";
+    ctx.textAlign = "center";
+    ctx.fillText("Start", canvas.width / 2, 170);
+
+    ctx.fillStyle = "black";
+    ctx.font = "bold 40px Italic";
+    ctx.fillText(score,canvas.width / 2,280);
+  }
+}
+
+function update() {
+  velocityY += gravity;
+  pandaY += velocityY;
+  pandaX += velocityX;
+
+  if (pandaX > canvas.width) pandaX = -pandaWidth;
+  if (pandaX + pandaWidth < 0) pandaX = canvas.width;
+
+  const scrollThreshold = canvas.height / 3;
+  if (gameStarted && pandaY < scrollThreshold) {
+    const delta = scrollThreshold - pandaY;
+    pandaY = scrollThreshold;
+    backgroundY += delta;
+    maxHeight = Math.max(maxHeight, backgroundY);
+  }
+
+  if (pandaY> canvas.height){
+      gameOver = true;
+      cancelAnimationFrame(animation)
+    }
+
+  for (const p of platforms) {
+    const pandaBottom = pandaY + pandaHeight;
+    const platTop = p.y + backgroundY;
+
+    if (
+      pandaX + pandaWidth > p.x &&
+      pandaX < p.x + platformWidth &&
+      pandaBottom >= platTop &&
+      pandaBottom <= platTop + 10 &&
+      velocityY > 0
+    ) {
+      pandaY = platTop - pandaHeight;
+      velocityY = jumpPower;
+      gameStarted = true;
+    }
+  }
+  if (!gameStarted) {
+    const groundY = platforms[0].y - 150;
+    if (pandaY >= groundY) {
+      pandaY = groundY;
+      jump();
+    }
+  }
+  platforms = platforms.filter(p => p.y + backgroundY < canvas.height + 50);
+  while (platforms.length < 30) {
+    const minY = Math.min(...platforms.map(p => p.y));
+    platforms.push({
+      x: Math.random() * (canvas.width - platformWidth),
+      y: minY - stepY,
+    });
+  }
+}
+
+function resetGame() {
+  backgroundY = 0;
+  velocityX = 0;
+  velocityY = 0;
+  maxHeight = 0;
+  gameStarted = false;
+  startButton = true;
+  gameOver = false;
+  startLoop = false;
+  generatePlatforms();
+  pandaX = (canvas.width - pandaWidth) / 2;
+  pandaY = platforms[0].y - pandaHeight;
+  fourPlatforms = canvas.height - pandaY;
+  draw(); 
+}
+
+function loop() {
+  animation = requestAnimationFrame(loop);
+  if (!isPaused && !startButton) {
+    update();
+  }
+  draw();
+}
+
+function setupControls() {
+  document.addEventListener("keydown", e => {
+    if (e.code === "ArrowLeft") velocityX = -5;
+    if (e.code === "ArrowRight") velocityX = 5;
+    if (e.code === "Space") jump();
+  });
+
+  document.addEventListener("keyup", e => {
+    if (e.code === "ArrowLeft" || e.code === "ArrowRight") velocityX = 0;
+  });
+
+  window.addEventListener("deviceorientation", e => {
+    const tilt = e.gamma;
+    velocityX = tilt > 5 ? 4 : tilt < -5 ? -4 : 0;
+  });
+
+  canvas.addEventListener("click", e => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // кнопка Пауза
+    if (
+      mouseX >= pauseX &&
+      mouseX <= pauseX + pauseSize &&
+      mouseY >= pauseY &&
+      mouseY <= pauseY + pauseSize
+    ) {
+      isPaused = !isPaused;
+      return;
+    }
+
+    // кнопка Играть
+    if (startButton) {
+      if (
+        mouseX >= btnX &&
+        mouseX <= btnX + btnWidth &&
+        mouseY >= btnY &&
+        mouseY <= btnY + btnHeight
+      ) {
+        startButton = false;
+        if (!startLoop){
+          loop();
+        }// запускаем игру 
+      }
+    }
+    else if  (gameOver) {
+      if (
+        mouseX >= btnX &&
+        mouseX <= btnX + btnWidth &&
+        mouseY >= 130 &&
+        mouseY <= 130 + btnHeight
+      ){
+        resetGame();
+        gameOver = false;
+        startButton = false;
+        loop();
+      }
+    }
+  });
+}
+
+window.onload = () => {
+  resizeCanvas();
+  generatePlatforms();
+  pandaX = (canvas.width - pandaWidth) / 2;
+  pandaY = platforms[0].y - pandaHeight;
+  setupControls();
+  draw(); // пока не запущена игра, просто рисуем экран
+};
+
+window.addEventListener("resize", () => {
+  const playing = !startButton && !gameOver;
+  resizeCanvas();
+  if (!playing) {
+    generatePlatforms();
+    pandaX = (canvas.width - pandaWidth) / 2;
+    pandaY = platforms[0].y - pandaHeight;
+    draw();
+  }
+});
