@@ -40,19 +40,22 @@ let fourPlatforms = 0;
 let platforms = [];
 
 function resizeCanvas() {
-  if (window.innerWidth <= 480) {
+  if (window.innerWidth <= 320) {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     canvas.style.width = '100vw';
     canvas.style.height = '100vh';
+    canvas.style.width = "100vw";
+    canvas.style.height = "100vh";
   } else {
     canvas.width = 400;
     canvas.height = 600;
     canvas.style.width = '400px';
     canvas.style.height = '600px';
+    canvas.style.width = "400px";
+    canvas.style.height = "600px";
   }
-
-  btnY = canvas.height - 100; // пересчёт кнопки "Start"
+  btnY = canvas.height - 100;
 }
 
 function generatePlatforms() {
@@ -107,11 +110,10 @@ function draw() {
 
   const score = Math.floor((maxHeight + fourPlatforms) / stepY);
   ctx.fillStyle = "black";
+  ctx.font = "bold 28px Italic";
   ctx.fillText(score, canvas.width - 50, 35);
 
   ctx.drawImage(pandaImg, pandaX, pandaY, pandaWidth, pandaHeight);
-  ctx.fillStyle = "black";
-  ctx.font = "bold 28px Italic";
 
   ctx.drawImage(isPaused ? playImg : pauseImg, pauseX, pauseY, pauseSize, pauseSize);
 
@@ -231,8 +233,10 @@ function loop() {
 function setupControls() {
   let keyLeft = false;
   let keyRight = false;
+  let tiltValue = 0;
 
   // Клавиатура — удержание
+  // Клавиши: удержание
   document.addEventListener("keydown", e => {
     if (e.code === "ArrowLeft") keyLeft = true;
     if (e.code === "ArrowRight") keyRight = true;
@@ -245,6 +249,7 @@ function setupControls() {
   });
 
   // Сенсорный ввод — удержание
+  // Сенсорный ввод
   canvas.addEventListener("touchstart", e => {
     const x = e.touches[0].clientX;
     if (x < window.innerWidth / 2) keyLeft = true;
@@ -258,45 +263,53 @@ function setupControls() {
 
   // Гироскоп
   window.addEventListener("deviceorientation", e => {
-    const tilt = e.gamma;
-    if (Math.abs(tilt) > 5) {
-      velocityX = tilt > 0 ? 4 : -4;
-    } else {
-      velocityX = 0;
+    if (e.gamma !== null) {
+      tiltValue = e.gamma;
     }
   });
 
   // Обновляем движение постоянно (приоритет у наклона)
+  // Постоянное обновление движения
   setInterval(() => {
-    // Только если гироскоп не активен
-    if (!window.orientationActive) {
-      if (keyLeft && !keyRight) velocityX = -5;
-      else if (keyRight && !keyLeft) velocityX = 5;
-      else velocityX = 0;
+    let gyroMove = 0;
+    if (Math.abs(tiltValue) > 5) {
+      gyroMove = tiltValue > 0 ? 2 : -2;
     }
+
+    let buttonMove = 0;
+    if (keyLeft && !keyRight) buttonMove = -4;
+    else if (keyRight && !keyLeft) buttonMove = 4;
+
+    velocityX = buttonMove + gyroMove;
+
+    // Ограничим скорость
+    if (velocityX > 6) velocityX = 6;
+    if (velocityX < -6) velocityX = -6;
   }, 20);
 
-  // Клик по canvas (start/pause)
+  // Клик (пауза, старт)
   canvas.addEventListener("click", e => {
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     const btnX = (canvas.width - btnWidth) / 2;
 
-    // Пауза
     if (
-      mouseX >= pauseX && mouseX <= pauseX + pauseSize &&
-      mouseY >= pauseY && mouseY <= pauseY + pauseSize
+      mouseX >= pauseX &&
+      mouseX <= pauseX + pauseSize &&
+      mouseY >= pauseY &&
+      mouseY <= pauseY + pauseSize
     ) {
       isPaused = !isPaused;
       return;
     }
 
-    // Старт
     if (startButton) {
       if (
-        mouseX >= btnX && mouseX <= btnX + btnWidth &&
-        mouseY >= btnY && mouseY <= btnY + btnHeight
+        mouseX >= btnX &&
+        mouseX <= btnX + btnWidth &&
+        mouseY >= btnY &&
+        mouseY <= btnY + btnHeight
       ) {
         startButton = false;
         if (!startLoop) {
@@ -304,13 +317,12 @@ function setupControls() {
           startLoop = true;
         }
       }
-    }
-
-    // Game Over → restart
-    if (gameOver) {
+    }if (gameOver) {
       if (
-        mouseX >= btnX && mouseX <= btnX + btnWidth &&
-        mouseY >= 130 && mouseY <= 130 + btnHeight
+        mouseX >= btnX &&
+        mouseX <= btnX + btnWidth &&
+        mouseY >= 130 &&
+        mouseY <= 130 + btnHeight
       ) {
         resetGame();
         gameOver = false;
