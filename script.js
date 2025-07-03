@@ -40,19 +40,19 @@ let fourPlatforms = 0;
 let platforms = [];
 
 function resizeCanvas() {
-  const dpr = window.devicePixelRatio || 1;
   if (window.innerWidth <= 480) {
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
   } else {
-    canvas.width = 400 * dpr;
-    canvas.height = 600 * dpr;
+    canvas.width = 400;
+    canvas.height = 600;
+    canvas.style.width = '400px';
+    canvas.style.height = '600px';
   }
-  canvas.style.width = window.innerWidth <= 480 ? '100vw' : '400px';
-  canvas.style.height = window.innerWidth <= 480 ? '100vh' : '600px';
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(dpr, dpr);
-  btnY = canvas.height / dpr - 100;
+
+  btnY = canvas.height - 100; // пересчёт кнопки "Start"
 }
 
 function generatePlatforms() {
@@ -106,6 +106,7 @@ function draw() {
   }
 
   const score = Math.floor((maxHeight + fourPlatforms) / stepY);
+  ctx.fillStyle = "black";
   ctx.fillText(score, canvas.width - 50, 35);
 
   ctx.drawImage(pandaImg, pandaX, pandaY, pandaWidth, pandaHeight);
