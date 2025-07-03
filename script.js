@@ -4,7 +4,7 @@ const ctx = canvas.getContext("2d");
 // Картинки
 const fonImg = new Image(); fonImg.src = "fonimg.jpg";
 const pandaImg = new Image(); pandaImg.src = "Panda.png";
-const pipeImg = new Image(); pipeImg.src = "klipartz.com.png";
+const pipeImg = new Image(); pipeImg.src = "pipe.png";
 const playImg = new Image(); playImg.src = "play.png";
 const pauseImg = new Image(); pauseImg.src = "pause.png";
 const startImg = new Image(); startImg.src = "start.png";
@@ -37,19 +37,23 @@ let startLoop = false;
 let gameOver = false;
 let animation = null;
 let fourPlatforms = 0;
+let sides = false;
 
 let platforms = [];
 
 function resizeCanvas() {
-  if (window.innerWidth <= 320) {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+  const dpr = window.devicePixelRatio || 1;
+  if (window.innerWidth <= 480) {
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
   } else {
-    canvas.width = 400;
-    canvas.height = 600;
+    canvas.width = 400 * dpr;
+    canvas.height = 600 * dpr;
   }
+  canvas.style.width = window.innerWidth <= 480 ? '100vw' : '400px';
+  canvas.style.height = window.innerWidth <= 480 ? '100vh' : '600px';
+  ctx.scale(dpr, dpr);
 }
-
 function generatePlatforms() {
   platforms = [];
   const startX = (canvas.width - platformWidth) / 2;
@@ -219,7 +223,11 @@ function setupControls() {
 
   window.addEventListener("deviceorientation", e => {
     const tilt = e.gamma;
-    velocityX = tilt > 5 ? 4 : tilt < -5 ? -4 : 0;
+    if (Math.abs(tilt) > 3) sides = true;
+    if (sides) {
+      velocityX = tilt > 5 ? 4 : tilt < -5 ? -4 : 0;
+    }
+  
   });
 
   canvas.addEventListener("click", e => {
@@ -266,6 +274,24 @@ function setupControls() {
       }
     }
   });
+
+  canvas.addEventListener("touchstart", (e) => {
+  if (!sides) {
+    const touchX = e.touches[0].clientX;
+    if (touchX < canvas.width / 2) {
+      velocityX = -5;
+    } else {
+      velocityX = 5;
+    }
+  }
+  jump(); // прыжок при касании
+});
+
+canvas.addEventListener("touchend", () => {
+  if (!sides) {
+    velocityX = 0;
+  }
+});
 }
 
 window.onload = () => {
