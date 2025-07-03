@@ -229,67 +229,88 @@ function loop() {
 }
 
 function setupControls() {
+  let keyLeft = false;
+  let keyRight = false;
+
+  // Клавиатура — удержание
   document.addEventListener("keydown", e => {
-    if (e.code === "ArrowLeft") velocityX = -5;
-    if (e.code === "ArrowRight") velocityX = 5;
+    if (e.code === "ArrowLeft") keyLeft = true;
+    if (e.code === "ArrowRight") keyRight = true;
+    if (e.code === "Space") jump();
   });
 
+  document.addEventListener("keyup", e => {
+    if (e.code === "ArrowLeft") keyLeft = false;
+    if (e.code === "ArrowRight") keyRight = false;
+  });
 
+  // Сенсорный ввод — удержание
+  canvas.addEventListener("touchstart", e => {
+    const x = e.touches[0].clientX;
+    if (x < window.innerWidth / 2) keyLeft = true;
+    else keyRight = true;
+  });
+
+  canvas.addEventListener("touchend", () => {
+    keyLeft = false;
+    keyRight = false;
+  });
+
+  // Гироскоп
   window.addEventListener("deviceorientation", e => {
     const tilt = e.gamma;
-    velocityX = tilt > 5 ? 4 : tilt < -5 ? -4 : 0;
+    if (Math.abs(tilt) > 5) {
+      velocityX = tilt > 0 ? 4 : -4;
+    } else {
+      velocityX = 0;
+    }
   });
 
+  // Обновляем движение постоянно (приоритет у наклона)
+  setInterval(() => {
+    // Только если гироскоп не активен
+    if (!window.orientationActive) {
+      if (keyLeft && !keyRight) velocityX = -5;
+      else if (keyRight && !keyLeft) velocityX = 5;
+      else velocityX = 0;
+    }
+  }, 20);
+
+  // Клик по canvas (start/pause)
   canvas.addEventListener("click", e => {
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     const btnX = (canvas.width - btnWidth) / 2;
 
-    const size = 60;
-    const controlY = canvas.height - size - 10;
-
-    if (mouseY >= controlY && mouseY <= controlY + size) {
-      if (mouseX >= 20 && mouseX <= 20 + size) {
-        velocityX = -5;
-        setTimeout(() => velocityX = 0, 200);
-        return;
-      }
-      if (mouseX >= canvas.width - 20 - size && mouseX <= canvas.width - 20) {
-        velocityX = 5;
-        setTimeout(() => velocityX = 0, 200);
-        return;
-      }
-    }
-
+    // Пауза
     if (
-      mouseX >= pauseX &&
-      mouseX <= pauseX + pauseSize &&
-      mouseY >= pauseY &&
-      mouseY <= pauseY + pauseSize
+      mouseX >= pauseX && mouseX <= pauseX + pauseSize &&
+      mouseY >= pauseY && mouseY <= pauseY + pauseSize
     ) {
       isPaused = !isPaused;
       return;
     }
 
+    // Старт
     if (startButton) {
       if (
-        mouseX >= btnX &&
-        mouseX <= btnX + btnWidth &&
-        mouseY >= btnY &&
-        mouseY <= btnY + btnHeight
-        ) {
+        mouseX >= btnX && mouseX <= btnX + btnWidth &&
+        mouseY >= btnY && mouseY <= btnY + btnHeight
+      ) {
         startButton = false;
         if (!startLoop) {
           loop();
+          startLoop = true;
         }
       }
-    } else if (gameOver) {
+    }
+
+    // Game Over → restart
+    if (gameOver) {
       if (
-        mouseX >= btnX &&
-        mouseX <= btnX + btnWidth &&
-        mouseY >= 130 &&
-        mouseY <= 130 + btnHeight
+        mouseX >= btnX && mouseX <= btnX + btnWidth &&
+        mouseY >= 130 && mouseY <= 130 + btnHeight
       ) {
         resetGame();
         gameOver = false;
