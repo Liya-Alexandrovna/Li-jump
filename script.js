@@ -24,7 +24,7 @@ const pauseSize = 50;
 const btnWidth = 200;
 const btnHeight = 60;
 const btnX = (canvas.width - btnWidth) / 2;
-const btnY = 500;
+const btnY = canvas.height - 100;
 
 let pandaX, pandaY;
 let velocityX = 0, velocityY = 0;
@@ -52,7 +52,9 @@ function resizeCanvas() {
   }
   canvas.style.width = window.innerWidth <= 480 ? '100vw' : '400px';
   canvas.style.height = window.innerWidth <= 480 ? '100vh' : '600px';
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // сброс масштабов
   ctx.scale(dpr, dpr);
+  btnY = canvas.height / dpr - 100;
 }
 function generatePlatforms() {
   platforms = [];
@@ -111,7 +113,7 @@ function draw() {
     ctx.fillStyle = "#000";
     ctx.font = "bold 30px Italic";
     ctx.textAlign = "center";
-    ctx.fillText("Start", canvas.width / 2, 540);
+    ctx.fillText("Start", canvas.width / 2, btnY + 40);
   }
   if (gameOver) {
     ctx.drawImage(gameOverImg, 0, 0, canvas.width, canvas.height);
