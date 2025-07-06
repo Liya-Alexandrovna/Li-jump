@@ -15,20 +15,6 @@ const startImg = new Image(); startImg.src = "start.png";
 const gameOverImg = new Image(); gameOverImg.src = "gameOver.png";
 const leaderImg = new Image(); leaderImg.src = "leader.png";
 
-// Размеры и физика
-const platformWidth = 60;
-const platformHeight = 20;
-const pandaWidth = 60;
-const pandaHeight = 70;
-const stepY = 50;
-const gravity = 0.5;
-const jumpPower = -10;
-const pauseX = 10;
-const pauseY = 0;
-const pauseSize = 50;
-const btnWidth = 200;
-const btnHeight = 60;
-let btnY = 0;
 // Константы для размеров, физики и кнопок
 const platformWidth = 60, platformHeight = 20;
 const pandaWidth = 60, pandaHeight = 70;
