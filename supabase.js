@@ -16,7 +16,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 export async function saveScore(score) {
   const { error } = await supabase
     .from('scores')
-    .upsert({ user_id: id, name, score }, { onConflict: ['user_id'] });
+    .upsert({ user_id: id, name, score }, { onConflict: 'user_id' });
 
   if (error) console.error('Ошибка сохранения:', error);
 }
