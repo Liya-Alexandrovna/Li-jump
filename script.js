@@ -1,7 +1,11 @@
+// Импорт функций из Supabase-модуля
+import { id, name, saveScore, loadLeaderboard, getUserRank } from './supabase.js';
+
+// Получаем canvas и контекст рисования
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Картинки
+// Загрузка изображений
 const fonImg = new Image(); fonImg.src = "fonimg.jpg";
 const pandaImg = new Image(); pandaImg.src = "Panda.png";
 const pipeImg = new Image(); pipeImg.src = "pipe.png";
@@ -9,6 +13,7 @@ const playImg = new Image(); playImg.src = "play.png";
 const pauseImg = new Image(); pauseImg.src = "pause.png";
 const startImg = new Image(); startImg.src = "start.png";
 const gameOverImg = new Image(); gameOverImg.src = "gameOver.png";
+const leaderImg = new Image(); leaderImg.src = "leader.png";
 
 // Размеры и физика
 const platformWidth = 60;
@@ -24,45 +29,47 @@ const pauseSize = 50;
 const btnWidth = 200;
 const btnHeight = 60;
 let btnY = 0;
+// Константы для размеров, физики и кнопок
+const platformWidth = 60, platformHeight = 20;
+const pandaWidth = 60, pandaHeight = 70;
+const stepY = 50, gravity = 0.5, jumpPower = -10;
+const pauseX = 10, pauseY = 0, pauseSize = 50;
+const btnWidth = 200, btnHeight = 60;
 
+// Переменные состояния игры
 let pandaX, pandaY;
 let velocityX = 0, velocityY = 0;
-let backgroundY = 0;
-let maxHeight = 0;
-let gameStarted = false;
-let isPaused = false;
-let startButton = true;
-let startLoop = false;
-let gameOver = false;
-let animation = null;
-let fourPlatforms = 0;
+let backgroundY = 0, maxHeight = 0, fourPlatforms = 0;
+let gameStarted = false, isPaused = false, startButton = true;
+let startLoop = false, gameOver = false, animation = null;
+let btnY = 0, score = 0, playerRank = null;
+let showLeader = false, leaderboardData = [];
 
-let platforms = [];
+let platforms = []; // Массив платформ
 
+// Адаптивный размер канваса
 function resizeCanvas() {
   if (window.innerWidth <= 320) {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    canvas.style.width = '100vw';
-    canvas.style.height = '100vh';
     canvas.style.width = "100vw";
     canvas.style.height = "100vh";
   } else {
     canvas.width = 400;
     canvas.height = 600;
-    canvas.style.width = '400px';
-    canvas.style.height = '600px';
     canvas.style.width = "400px";
     canvas.style.height = "600px";
   }
   btnY = canvas.height - 100;
 }
 
+// Генерация платформ
 function generatePlatforms() {
   platforms = [];
   const startX = (canvas.width - platformWidth) / 2;
   const startY = canvas.height - 20;
-  platforms.push({ x: startX, y: startY });
+  platforms.push({ x: startX, y: startY }); // первая платформа по центру
+
   for (let i = 1; i < 30; i++) {
     platforms.push({
       x: Math.random() * (canvas.width - platformWidth),
@@ -71,107 +78,132 @@ function generatePlatforms() {
   }
 }
 
+// Прыжок панды
 function jump() {
   velocityY = jumpPower;
 }
 
+// Кнопки для сенсорного управления
 function drawTouchControls() {
-  const size = 60;
-  const y = canvas.height - size - 10;
-
+  const size = 60, y = canvas.height - size - 10;
   ctx.fillStyle = "rgba(0,0,0,0.3)";
+
+  // Левая кнопка
   ctx.beginPath();
   ctx.moveTo(20 + size, y);
   ctx.lineTo(20, y + size / 2);
   ctx.lineTo(20 + size, y + size);
-  ctx.closePath();
   ctx.fill();
 
+  // Правая кнопка
   ctx.beginPath();
   ctx.moveTo(canvas.width - 20 - size, y);
   ctx.lineTo(canvas.width - 20, y + size / 2);
   ctx.lineTo(canvas.width - 20 - size, y + size);
-  ctx.closePath();
   ctx.fill();
 }
 
+// Основной рендеринг игры
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // Прокрутка фона
   const bgHeight = (fonImg.height * canvas.width) / fonImg.width;
   const y = -backgroundY % bgHeight;
   for (let i = -1; i <= Math.ceil(canvas.height / bgHeight); i++) {
     ctx.drawImage(fonImg, 0, y + i * bgHeight, canvas.width, bgHeight);
   }
 
+  // Платформы
   for (const p of platforms) {
     ctx.drawImage(pipeImg, p.x, p.y + backgroundY, platformWidth, platformHeight);
   }
 
-  const score = Math.floor((maxHeight + fourPlatforms) / stepY);
+  // Счёт
+  score = Math.floor((maxHeight + fourPlatforms) / stepY);
   ctx.fillStyle = "black";
   ctx.font = "bold 28px Italic";
   ctx.fillText(score, canvas.width - 50, 35);
 
+  // Панда и кнопка паузы
   ctx.drawImage(pandaImg, pandaX, pandaY, pandaWidth, pandaHeight);
-
   ctx.drawImage(isPaused ? playImg : pauseImg, pauseX, pauseY, pauseSize, pauseSize);
 
-  if (startButton) {
-    ctx.drawImage(startImg, 0, 0, canvas.width, canvas.height);
+  // Стартовый экран или экран окончания
+  if (startButton || gameOver) {
+    const img = gameOver ? gameOverImg : startImg;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const btnX = (canvas.width - btnWidth) / 2;
     ctx.fillStyle = "#fff";
-    ctx.fillRect(btnX, btnY, btnWidth, btnHeight);
+    ctx.fillRect(btnX, gameOver ? 130 : btnY, btnWidth, btnHeight);
     ctx.strokeStyle = "#000";
-    ctx.strokeRect(btnX, btnY, btnWidth, btnHeight);
+    ctx.strokeRect(btnX, gameOver ? 130 : btnY, btnWidth, btnHeight);
     ctx.fillStyle = "#000";
     ctx.font = "bold 30px Italic";
     ctx.textAlign = "center";
-    ctx.fillText("Start", canvas.width / 2, btnY + 40);
+    ctx.fillText("Start", canvas.width / 2, (gameOver ? 130 : btnY) + 40);
+
+    // Лидер и счёт при проигрыше
+    if (gameOver) {
+      ctx.drawImage(leaderImg, 5, 520, 40, 40);
+      ctx.fillStyle = "black";
+      ctx.font = "bold 40px Italic";
+      ctx.fillText(score, canvas.width / 2, 280);
+
+      if (playerRank !== null) {
+        ctx.font = "bold 24px Italic";
+        ctx.fillText(`${name}, ты №${playerRank} в топе`, canvas.width / 2, 370);
+      }
+    } else {
+      ctx.drawImage(leaderImg, 5, 520, 40, 40);
+    }
   }
 
-  if (gameOver) {
-    ctx.drawImage(gameOverImg, 0, 0, canvas.width, canvas.height);
-    const btnX = (canvas.width - btnWidth) / 2;
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(btnX, 130, btnWidth, btnHeight);
-    ctx.strokeStyle = "#000";
-    ctx.strokeRect(btnX, 130, btnWidth, btnHeight);
-    ctx.fillStyle = "#000";
-    ctx.font = "bold 30px Italic";
-    ctx.textAlign = "center";
-    ctx.fillText("Start", canvas.width / 2, 170);
+  // Отрисовка кнопок движения на мобилке
+  if (!startButton && !gameOver) drawTouchControls();
+
+  // Отображение топ-10
+  if (showLeader) {
+    ctx.fillStyle = "rgba(255,255,255,0.95) border";
+    ctx.fillRect(20, 60, canvas.width - 40, canvas.height - 120);
     ctx.fillStyle = "black";
-    ctx.font = "bold 40px Italic";
-    ctx.fillText(score, canvas.width / 2, 280);
-  }
-
-  if (!startButton && !gameOver) {
-    drawTouchControls();
+    ctx.font = "bold 20px Italic";
+    ctx.textAlign = "left";
+    ctx.fillText("Топ-10 игроков", 30, 90);
+    leaderboardData.forEach((user, i) => {
+      ctx.fillText(`${i + 1}. ${user.name} — ${user.score}`, 30, 120 + i * 25);
+    });
   }
 }
 
+// Обновление физики и состояния игры
 function update() {
   velocityY += gravity;
   pandaY += velocityY;
   pandaX += velocityX;
 
+  // Переход за границы по X
   if (pandaX > canvas.width) pandaX = -pandaWidth;
   if (pandaX + pandaWidth < 0) pandaX = canvas.width;
 
-  const scrollThreshold = canvas.height / 3;
-  if (gameStarted && pandaY < scrollThreshold) {
-    const delta = scrollThreshold - pandaY;
-    pandaY = scrollThreshold;
+  // Прокрутка вверх
+  if (gameStarted && pandaY < canvas.height / 3) {
+    const delta = canvas.height / 3 - pandaY;
+    pandaY = canvas.height / 3;
     backgroundY += delta;
     maxHeight = Math.max(maxHeight, backgroundY);
   }
 
+  // Проверка на проигрыш
   if (pandaY > canvas.height) {
     gameOver = true;
     cancelAnimationFrame(animation);
+    score = Math.floor((maxHeight + fourPlatforms) / stepY);
+    saveScore(score);
+    getUserRank(score).then(rank => playerRank = rank);
   }
 
+  // Столкновения с платформами
   for (const p of platforms) {
     const pandaBottom = pandaY + pandaHeight;
     const platTop = p.y + backgroundY;
@@ -188,14 +220,16 @@ function update() {
     }
   }
 
-  if (!gameStarted) {
-    const groundY = platforms[0].y - 150;
-    if (pandaY >= groundY) {
-      pandaY = groundY;
-      jump();
+  // Автопрыжок на первой платформе до начала игры
+  if (!gameStarted && platforms.length > 0) {
+    const platY = platforms[0].y;
+    if (pandaY + pandaHeight >= platY - 5 && velocityY >= 0) {
+      velocityY = jumpPower;
+      pandaY = platY - pandaHeight;
     }
   }
 
+  // Удаление старых и добавление новых платформ
   platforms = platforms.filter(p => p.y + backgroundY < canvas.height + 50);
   while (platforms.length < 30) {
     const minY = Math.min(...platforms.map(p => p.y));
@@ -206,15 +240,13 @@ function update() {
   }
 }
 
+// Сброс игры
 function resetGame() {
-  backgroundY = 0;
-  velocityX = 0;
-  velocityY = 0;
-  maxHeight = 0;
-  gameStarted = false;
+  backgroundY = maxHeight = velocityX = velocityY = 0;
+  gameStarted = isPaused = showLeader = false;
   startButton = true;
   gameOver = false;
-  startLoop = false;
+
   generatePlatforms();
   pandaX = (canvas.width - pandaWidth) / 2;
   pandaY = platforms[0].y - pandaHeight;
@@ -222,38 +254,33 @@ function resetGame() {
   draw();
 }
 
+// Игровой цикл
 function loop() {
   animation = requestAnimationFrame(loop);
-  if (!isPaused && !startButton) {
-    update();
-  }
+  if (!isPaused && !startButton) update();
   draw();
 }
 
+// Управление
 function setupControls() {
-  let keyLeft = false;
-  let keyRight = false;
-  let tiltValue = 0;
+  let keyLeft = false, keyRight = false;
 
-  // Клавиатура — удержание
-  // Клавиши: удержание
+  // Клавиатура
   document.addEventListener("keydown", e => {
     if (e.code === "ArrowLeft") keyLeft = true;
     if (e.code === "ArrowRight") keyRight = true;
     if (e.code === "Space") jump();
   });
-
   document.addEventListener("keyup", e => {
     if (e.code === "ArrowLeft") keyLeft = false;
     if (e.code === "ArrowRight") keyRight = false;
   });
 
-  // Сенсорный ввод — удержание
-  // Сенсорный ввод
+  // Сенсорное управление
   canvas.addEventListener("touchstart", e => {
     const x = e.touches[0].clientX;
-    if (x < window.innerWidth / 2) keyLeft = true;
-    else keyRight = true;
+    keyLeft = x < window.innerWidth / 2;
+    keyRight = !keyLeft;
   });
 
   canvas.addEventListener("touchend", () => {
@@ -261,78 +288,52 @@ function setupControls() {
     keyRight = false;
   });
 
-  // Гироскоп
-  window.addEventListener("deviceorientation", e => {
-    if (e.gamma !== null) {
-      tiltValue = e.gamma;
-    }
-  });
-
-  // Обновляем движение постоянно (приоритет у наклона)
-  // Постоянное обновление движения
+  // Автообновление движения
   setInterval(() => {
-    let gyroMove = 0;
-    if (Math.abs(tiltValue) > 5) {
-      gyroMove = tiltValue > 0 ? 2 : -2;
-    }
-
-    let buttonMove = 0;
-    if (keyLeft && !keyRight) buttonMove = -4;
-    else if (keyRight && !keyLeft) buttonMove = 4;
-
-    velocityX = buttonMove + gyroMove;
-
-    // Ограничим скорость
-    if (velocityX > 6) velocityX = 6;
-    if (velocityX < -6) velocityX = -6;
+    velocityX = keyLeft ? -4 : keyRight ? 4 : 0;
   }, 20);
 
-  // Клик (пауза, старт)
+  // Обработка кликов
   canvas.addEventListener("click", e => {
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     const btnX = (canvas.width - btnWidth) / 2;
 
-    if (
-      mouseX >= pauseX &&
-      mouseX <= pauseX + pauseSize &&
-      mouseY >= pauseY &&
-      mouseY <= pauseY + pauseSize
-    ) {
+    // Иконка лидеров (в левом нижнем углу)
+    if (mouseX >= 10 && mouseX <= 50 && mouseY >= canvas.height - 50 && mouseY <= canvas.height - 10) {
+      showLeader = !showLeader;
+      if (showLeader) {
+        loadLeaderboard().then(data => leaderboardData = data);
+      }
+      return;
+    }
+
+    // Пауза
+    if (mouseX >= pauseX && mouseX <= pauseX + pauseSize && mouseY >= pauseY && mouseY <= pauseY + pauseSize) {
       isPaused = !isPaused;
       return;
     }
 
-    if (startButton) {
-      if (
-        mouseX >= btnX &&
-        mouseX <= btnX + btnWidth &&
-        mouseY >= btnY &&
-        mouseY <= btnY + btnHeight
-      ) {
-        startButton = false;
-        if (!startLoop) {
-          loop();
-          startLoop = true;
-        }
-      }
-    }if (gameOver) {
-      if (
-        mouseX >= btnX &&
-        mouseX <= btnX + btnWidth &&
-        mouseY >= 130 &&
-        mouseY <= 130 + btnHeight
-      ) {
-        resetGame();
-        gameOver = false;
-        startButton = false;
+    // Старт игры
+    if (startButton && mouseX >= btnX && mouseX <= btnX + btnWidth && mouseY >= btnY && mouseY <= btnY + btnHeight) {
+      startButton = false;
+      if (!startLoop) {
         loop();
+        startLoop = true;
       }
+    }
+
+    // Перезапуск после проигрыша
+    if (gameOver && mouseX >= btnX && mouseX <= btnX + btnWidth && mouseY >= 130 && mouseY <= 130 + btnHeight) {
+      resetGame();
+      startButton = false;
+      loop();
     }
   });
 }
 
+// Инициализация при загрузке
 window.onload = () => {
   resizeCanvas();
   generatePlatforms();
@@ -342,10 +343,10 @@ window.onload = () => {
   draw();
 };
 
+// Изменение размера окна
 window.addEventListener("resize", () => {
-  const playing = !startButton && !gameOver;
   resizeCanvas();
-  if (!playing) {
+  if (startButton || gameOver) {
     generatePlatforms();
     pandaX = (canvas.width - pandaWidth) / 2;
     pandaY = platforms[0].y - pandaHeight;
