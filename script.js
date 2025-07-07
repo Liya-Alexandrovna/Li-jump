@@ -31,6 +31,7 @@ let gameStarted = false, isPaused = false, startButton = true;
 let startLoop = false, gameOver = false, animation = null;
 let btnY = 0, score = 0, playerRank = null;
 let showLeader = false, leaderboardData = [];
+let lastTime = performance.now();
 
 let platforms = []; // Массив платформ
 
@@ -238,9 +239,12 @@ function resetGame() {
 }
 
 // Игровой цикл
-function loop() {
+function loop(time) {
+  const deltaTime = (time - lastTime) / 16.67;
+  lastTime = time;
+
   animation = requestAnimationFrame(loop);
-  if (!isPaused && !startButton) update();
+  if (!isPaused && !startButton) update(deltaTime);
   draw();
 }
 
