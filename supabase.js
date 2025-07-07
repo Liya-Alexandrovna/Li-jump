@@ -2,6 +2,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 // Telegram WebApp данные
 export const tg = window.Telegram.WebApp;
+tg.expand();
 const user = tg.initDataUnsafe?.user || {};
 
 // ID и имя пользователя
@@ -10,7 +11,7 @@ export const name = user?.username || user?.first_name || 'Anonymous';
 
 // Инициализация Supabase
 const supabaseUrl = 'https://nmtotmsuclnowxhemibc.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tdG90bXN1Y2xub3d4aGVtaWJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1NDM4NzMsImV4cCI6MjA2NzExOTg3M30._EEk-_GT62n8u9MkqTSiiYNWaAmQCV90n9w4QCL94fA'; // 🔴 твой ключ
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tdG90bXN1Y2xub3d4aGVtaWJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1NDM4NzMsImV4cCI6MjA2NzExOTg3M30._EEk-_GT62n8u9MkqTSiiYNWaAmQCV90n9w4QCL94fA'; 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Сохраняем результат
