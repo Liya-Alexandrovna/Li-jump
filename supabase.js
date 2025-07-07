@@ -15,11 +15,33 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Сохраняем результат
 export async function saveScore(score) {
-  const { error } = await supabase
-    .from('scores')
-    .upsert({ user_id: id, name, score }, { onConflict: 'user_id' });
+  try {
+    // Проверяем, есть ли у пользователя уже результат
+    const { data: existing, error: fetchError } = await supabase
+      .from('scores')
+      .select('score')
+      .eq('user_id', id)
+      .single();
 
-  if (error) console.error('Ошибка сохранения:', error);
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error("Ошибка получения текущего счёта:", fetchError);
+      return;
+    }
+
+    if (existing && score <= existing.score) {
+      console.log("Новый счёт не лучше предыдущего. Не сохраняем.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from('scores')
+      .upsert({ user_id: id, name, score }, { onConflict: ['user_id'] });
+
+    if (error) console.error("Ошибка сохранения результата:", error);
+    else console.log("Счёт сохранён:", score);
+  } catch (e) {
+    console.error("Ошибка в saveScore:", e);
+  }
 }
 
 // Загружаем таблицу лидеров

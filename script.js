@@ -14,6 +14,7 @@ const pauseImg = new Image(); pauseImg.src = "pause.png";
 const startImg = new Image(); startImg.src = "start.png";
 const gameOverImg = new Image(); gameOverImg.src = "gameOver.png";
 const leaderImg = new Image(); leaderImg.src = "leader.png";
+const fonscoresImg = new Image(); fonscoresImg.src = "fonscores.jpg";
 
 // Константы для размеров, физики и кнопок
 const platformWidth = 60, platformHeight = 20;
@@ -117,42 +118,43 @@ function draw() {
 
   // Стартовый экран или экран окончания
   if (startButton || gameOver) {
-  const img = gameOver ? gameOverImg : startImg;
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  const btnX = (canvas.width - btnWidth) / 2;
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(btnX, gameOver ? 130 : btnY, btnWidth, btnHeight);
-  ctx.strokeStyle = "#000";
-  ctx.strokeRect(btnX, gameOver ? 130 : btnY, btnWidth, btnHeight);
-  ctx.fillStyle = "#000";
-  ctx.font = "bold 30px Italic";
-  ctx.textAlign = "center";
-  ctx.fillText("Start", canvas.width / 2, (gameOver ? 130 : btnY) + 40);
+    const img = gameOver ? gameOverImg : startImg;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const btnX = (canvas.width - btnWidth) / 2;ctx.fillStyle = "#fff";
+    ctx.fillRect(btnX, gameOver ? 130 : btnY, btnWidth, btnHeight);
+    ctx.strokeStyle = "#000";
+    ctx.strokeRect(btnX, gameOver ? 130 : btnY, btnWidth, btnHeight);
+    ctx.fillStyle = "#000";
+    ctx.font = "bold 30px Italic";
+    ctx.textAlign = "center";
+    ctx.fillText("Start", canvas.width / 2, (gameOver ? 130 : btnY) + 40);
 
-  // Иконка лидеров только в start/gameOver
-  ctx.drawImage(leaderImg, 5, 520, 40, 40);
+    // Лидер и счёт при проигрыше
+    if (gameOver) {
+      ctx.drawImage(leaderImg, 5, 520, 40, 40);
+      ctx.fillStyle = "black";
+      ctx.font = "bold 40px Italic";
+      ctx.fillText(score, canvas.width / 2, 280);
 
-  if (gameOver) {
-    ctx.fillStyle = "black";
-    ctx.font = "bold 40px Italic";
-    ctx.fillText(score, canvas.width / 2, 280);
-
-    if (playerRank !== null) {
-      ctx.font = "bold 24px Italic";
-      ctx.fillText(`${name}, ты №${playerRank} в топе`, canvas.width / 2, 370);
+      if (playerRank !== null) {
+        ctx.font = "bold 24px Italic";
+      }
+    } else {
+      ctx.drawImage(leaderImg, 5, 520, 40, 40);
     }
   }
-}
+
+  // Отрисовка кнопок движения на мобилке
+  if (!startButton && !gameOver) drawTouchControls();
+
   // Отображение топ-10
   if (showLeader) {
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
-    ctx.fillRect(20, 60, canvas.width - 40, canvas.height - 120);
+    ctx.drawImage(fonscoresImg, 20, 60, canvas.width - 40, canvas.height - 120);
     ctx.fillStyle = "black";
-    ctx.font = "bold 20px Italic";
+    ctx.font = "bold 25px Italic";
     ctx.textAlign = "left";
-    ctx.fillText("Топ-10 игроков", 30, 90);
     leaderboardData.forEach((user, i) => {
-      ctx.fillText(`${i + 1}. ${user.name} — ${user.score}`, 30, 120 + i * 25);
+      ctx.fillText(`${i + 1}. ${user.name} — ${user.score}`, 30, 130 + i * 35);
     });
   }
 }
@@ -255,9 +257,7 @@ function setupControls() {
   document.addEventListener("keyup", e => {
     if (e.code === "ArrowLeft") keyLeft = false;
     if (e.code === "ArrowRight") keyRight = false;
-  });
-
-  // Сенсорное управление
+  });// Сенсорное управление
   canvas.addEventListener("touchstart", e => {
     const x = e.touches[0].clientX;
     keyLeft = x < window.innerWidth / 2;
@@ -281,18 +281,20 @@ function setupControls() {
     const mouseY = e.clientY - rect.top;
     const btnX = (canvas.width - btnWidth) / 2;
 
-    // Иконка лидеров (в левом нижнем углу)
-    if (
-  (startButton || gameOver) &&
-  mouseX >= 5 && mouseX <= 45 &&
-  mouseY >= 520 && mouseY <= 560
-) {
-  showLeader = !showLeader;
-  if (showLeader) {
-    loadLeaderboard().then(data => leaderboardData = data);
-  }
-  return;
-}
+    // Иконка лидеров (в левом нижнем углу) — показываем только если старт или game over
+    if ((startButton || gameOver) && mouseX >= 5 && mouseX <= 45 && mouseY >= 520 && mouseY <= 560) {
+      showLeader = !showLeader;
+      if (showLeader) {
+        loadLeaderboard().then(data => {
+          leaderboardData = data;
+          console.log('Leaderboard loaded:', leaderboardData);
+          draw();
+        });
+      } else {
+        draw();
+      }
+      return;
+    }
 
     // Пауза
     if (mouseX >= pauseX && mouseX <= pauseX + pauseSize && mouseY >= pauseY && mouseY <= pauseY + pauseSize) {
@@ -307,6 +309,7 @@ function setupControls() {
         loop();
         startLoop = true;
       }
+      return;
     }
 
     // Перезапуск после проигрыша
@@ -314,6 +317,7 @@ function setupControls() {
       resetGame();
       startButton = false;
       loop();
+      return;
     }
   });
 }
