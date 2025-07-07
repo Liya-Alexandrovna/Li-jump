@@ -290,10 +290,11 @@ function setupControls() {
     if (mouseX >= 10 && mouseX <= 50 && mouseY >= canvas.height - 50 && mouseY <= canvas.height - 10) {
       showLeader = !showLeader;
       if (showLeader) {
-        loadLeaderboard().then(data => leaderboardData = data);
-      }
+        loadLeaderboard().then(data => {leaderboardData = data;
+          console.log('Leaderboard loaded:', leaderboardData)
+      });
       return;
-    }
+    }}
 
     // Пауза
     if (mouseX >= pauseX && mouseX <= pauseX + pauseSize && mouseY >= pauseY && mouseY <= pauseY + pauseSize) {
