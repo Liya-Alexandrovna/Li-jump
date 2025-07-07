@@ -117,37 +117,32 @@ function draw() {
 
   // Стартовый экран или экран окончания
   if (startButton || gameOver) {
-    const img = gameOver ? gameOverImg : startImg;
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    const btnX = (canvas.width - btnWidth) / 2;
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(btnX, gameOver ? 130 : btnY, btnWidth, btnHeight);
-    ctx.strokeStyle = "#000";
-    ctx.strokeRect(btnX, gameOver ? 130 : btnY, btnWidth, btnHeight);
-    ctx.fillStyle = "#000";
-    ctx.font = "bold 30px Italic";
-    ctx.textAlign = "center";
-    ctx.fillText("Start", canvas.width / 2, (gameOver ? 130 : btnY) + 40);
+  const img = gameOver ? gameOverImg : startImg;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  const btnX = (canvas.width - btnWidth) / 2;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(btnX, gameOver ? 130 : btnY, btnWidth, btnHeight);
+  ctx.strokeStyle = "#000";
+  ctx.strokeRect(btnX, gameOver ? 130 : btnY, btnWidth, btnHeight);
+  ctx.fillStyle = "#000";
+  ctx.font = "bold 30px Italic";
+  ctx.textAlign = "center";
+  ctx.fillText("Start", canvas.width / 2, (gameOver ? 130 : btnY) + 40);
 
-    // Лидер и счёт при проигрыше
-    if (gameOver) {
-      ctx.drawImage(leaderImg, 5, 520, 40, 40);
-      ctx.fillStyle = "black";
-      ctx.font = "bold 40px Italic";
-      ctx.fillText(score, canvas.width / 2, 280);
+  // Иконка лидеров только в start/gameOver
+  ctx.drawImage(leaderImg, 5, 520, 40, 40);
 
-      if (playerRank !== null) {
-        ctx.font = "bold 24px Italic";
-        ctx.fillText(`${name}, ты №${playerRank} в топе`, canvas.width / 2, 370);
-      }
-    } else {
-      ctx.drawImage(leaderImg, 5, 520, 40, 40);
+  if (gameOver) {
+    ctx.fillStyle = "black";
+    ctx.font = "bold 40px Italic";
+    ctx.fillText(score, canvas.width / 2, 280);
+
+    if (playerRank !== null) {
+      ctx.font = "bold 24px Italic";
+      ctx.fillText(`${name}, ты №${playerRank} в топе`, canvas.width / 2, 370);
     }
   }
-
-  // Отрисовка кнопок движения на мобилке
-  if (!startButton && !gameOver) drawTouchControls();
-
+}
   // Отображение топ-10
   if (showLeader) {
     ctx.fillStyle = "rgba(255,255,255,0.95)";
@@ -287,14 +282,17 @@ function setupControls() {
     const btnX = (canvas.width - btnWidth) / 2;
 
     // Иконка лидеров (в левом нижнем углу)
-    if (mouseX >= 10 && mouseX <= 50 && mouseY >= canvas.height - 50 && mouseY <= canvas.height - 10) {
-      showLeader = !showLeader;
-      if (showLeader) {
-        loadLeaderboard().then(data => {leaderboardData = data;
-          console.log('Leaderboard loaded:', leaderboardData)
-      });
-      return;
-    }}
+    if (
+  (startButton || gameOver) &&
+  mouseX >= 5 && mouseX <= 45 &&
+  mouseY >= 520 && mouseY <= 560
+) {
+  showLeader = !showLeader;
+  if (showLeader) {
+    loadLeaderboard().then(data => leaderboardData = data);
+  }
+  return;
+}
 
     // Пауза
     if (mouseX >= pauseX && mouseX <= pauseX + pauseSize && mouseY >= pauseY && mouseY <= pauseY + pauseSize) {
