@@ -31,8 +31,7 @@ let gameStarted = false, isPaused = false, startButton = true;
 let startLoop = false, gameOver = false, animation = null;
 let btnY = 0, score = 0, playerRank = null;
 let showLeader = false, leaderboardData = [];
-let lastTime = 0;
-
+let lastTime = performance.now();
 
 let platforms = []; // Массив платформ
 
@@ -162,10 +161,10 @@ function draw() {
 }
 
 // Обновление физики и состояния игры
-function update(deltaTime = 1) {
-  velocityY += gravity * deltaTime;
-  pandaY += velocityY * deltaTime;
-  pandaX += velocityX * deltaTime;
+function update() {
+  velocityY += gravity;
+  pandaY += velocityY;
+  pandaX += velocityX;
 
   // Переход за границы по X
   if (pandaX > canvas.width) pandaX = -pandaWidth;
@@ -240,9 +239,9 @@ function resetGame() {
 }
 
 // Игровой цикл
-function loop(currentTime) {
-  const deltaTime = (currentTime - lastTime) / 16.67; // 16.67 ≈ 60 FPS
-  lastTime = currentTime;
+function loop(time) {
+  const deltaTime = (time - lastTime) / 16.67;
+  lastTime = time;
 
   animation = requestAnimationFrame(loop);
   if (!isPaused && !startButton) update(deltaTime);
