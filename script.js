@@ -22,8 +22,6 @@ const pandaWidth = 60, pandaHeight = 70;
 const stepY = 50, gravity = 0.5, jumpPower = -10;
 const pauseX = 10, pauseY = 0, pauseSize = 50;
 const btnWidth = 200, btnHeight = 60;
-const gw = 400;
-const gh = 600;
 
 // Переменные состояния игры
 let pandaX, pandaY;
@@ -39,22 +37,18 @@ let platforms = []; // Массив платформ
 
 // Адаптивный размер канваса
 function resizeCanvas() {
-  const scaleX = window.innerWidth / gw;
-  const scaleY = window.innerHeight / gh;
-  const scale = Math.min(scaleX, scaleY);
-
-  canvas.width = gw;
-  canvas.height = gh;
-
-  canvas.style.width = gw * scale + "px";
-  canvas.style.height = gh * scale + "px";
-  canvas.style.position = "absolute";
-  canvas.style.left = (window.innerWidth - gw * scale) / 2 + "px";
-  canvas.style.top = (window.innerHeight - gh * scale) / 2 + "px";
-
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
-
-  btnY = gh - 100;
+  if (window.innerWidth <= 320) {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.width = "100vw";
+    canvas.style.height = "100vh";
+  } else {
+    canvas.width = 400;
+    canvas.height = 600;
+    canvas.style.width = "400px";
+    canvas.style.height = "600px";
+  }
+  btnY = canvas.height - 100;
 }
 
 // Генерация платформ
@@ -336,17 +330,19 @@ function setupControls() {
 window.onload = () => {
   resizeCanvas();
   generatePlatforms();
-  pandaX = (gw - pandaWidth) / 2;
+  pandaX = (canvas.width - pandaWidth) / 2;
   pandaY = platforms[0].y - pandaHeight;
   setupControls();
   draw();
 };
 
 // Изменение размера окна
-window.addEventListener("resize", resizeCanvas);
+window.addEventListener("resize", () => {
+  resizeCanvas();
   if (startButton || gameOver) {
     generatePlatforms();
     pandaX = (canvas.width - pandaWidth) / 2;
     pandaY = platforms[0].y - pandaHeight;
     draw();
-  };
+  }
+});
