@@ -161,10 +161,10 @@ function draw() {
 }
 
 // Обновление физики и состояния игры
-function update() {
-  velocityY += gravity;
-  pandaY += velocityY;
-  pandaX += velocityX;
+function update(delta = 1) {
+  velocityY += gravity * delta;
+  pandaY += velocityY * delta;
+  pandaX += velocityX * delta;
 
   // Переход за границы по X
   if (pandaX > canvas.width) pandaX = -pandaWidth;
@@ -239,12 +239,11 @@ function resetGame() {
 }
 
 // Игровой цикл
-function loop(time) {
-  const deltaTime = (time - lastTime) / 16.67;
-  lastTime = time;
+function loop(timestamp) {
+  const delta = (timestamp - lastTimestamp) / (1000 / 60); 
 
   animation = requestAnimationFrame(loop);
-  if (!isPaused && !startButton) update(deltaTime);
+  if (!isPaused && !startButton) update(delta);
   draw();
 }
 
