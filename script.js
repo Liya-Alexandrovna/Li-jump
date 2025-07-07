@@ -150,7 +150,7 @@ function draw() {
 
   // Отображение топ-10
   if (showLeader) {
-    ctx.fillStyle = "rgba(255,255,255,0.95) border";
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
     ctx.fillRect(20, 60, canvas.width - 40, canvas.height - 120);
     ctx.fillStyle = "black";
     ctx.font = "bold 20px Italic";

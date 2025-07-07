@@ -4,6 +4,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 export const tg = window.Telegram.WebApp;
 const user = tg.initDataUnsafe?.user || {};
 
+// ID и имя пользователя
 export const id = user?.id || 'unknown_id';
 export const name = user?.username || user?.first_name || 'Anonymous';
 
