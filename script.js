@@ -6,15 +6,15 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 // Загрузка изображений
-const fonImg = new Image(); fonImg.src = "fonimg.jpg";
-const pandaImg = new Image(); pandaImg.src = "Panda.png";
-const pipeImg = new Image(); pipeImg.src = "pipe.png";
-const playImg = new Image(); playImg.src = "play.png";
-const pauseImg = new Image(); pauseImg.src = "pause.png";
-const startImg = new Image(); startImg.src = "start.png";
-const gameOverImg = new Image(); gameOverImg.src = "gameOver.png";
-const leaderImg = new Image(); leaderImg.src = "leader.png";
-const fonscoresImg = new Image(); fonscoresImg.src = "fonscores.jpg";
+const fonImg = new Image(); fonImg.src = "/img/fonimg.jpg";
+const pandaImg = new Image(); pandaImg.src = "/img/Panda.png";
+const pipeImg = new Image(); pipeImg.src = "/img/pipe.png";
+const playImg = new Image(); playImg.src = "/img/play.png";
+const pauseImg = new Image(); pauseImg.src = "/img/pause.png";
+const startImg = new Image(); startImg.src = "/img/start.png";
+const gameOverImg = new Image(); gameOverImg.src = "/img/gameOver.png";
+const leaderImg = new Image(); leaderImg.src = "/img/leader.png";
+const fonscoresImg = new Image(); fonscoresImg.src = "/img/fonscores.jpg";
 
 // Константы для размеров, физики и кнопок
 const platformWidth = 60, platformHeight = 20;
@@ -155,7 +155,7 @@ function draw() {
     ctx.font = "bold 25px Italic";
     ctx.textAlign = "left";
     leaderboardData.forEach((user, i) => {
-      ctx.fillText(`${i + 1}. ${user.name} — ${user.score}`, 30, 130 + i * 35);
+      ctx.fillText(`${i + 1}. ${user.name} — ${user.score}`, 40, 150 + i * 35);
     });
   }
 }
